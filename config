@@ -1,0 +1,3 @@
+Host ss
+	HostName username.strongspace.com
+	User username
