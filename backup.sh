@@ -19,7 +19,7 @@ MY_DB='db-name-1 db-name-2'
 
 
 # The Strongspace SSH alias name
-# (i.e. the before defined Host in “.ssh/config file”).
+# (i.e. the before defined Host in .ssh/config file).
 
 SS_ALIAS=ss
 
@@ -38,19 +38,19 @@ SS_NAME_5=subdirectory-name-5
 
 # How many days to keep the database backups for;
 # e.g. for a backup once a week and wanting to keep
-# eight backups on the disk, set this to “56”.
+# eight backups on the disk, set this to 56.
 
 MTIME=56
 
 
-# DON’T EDIT TOO MUCH BELOW HERE, UNLESS ONE IS DOING SOMETHING CUSTOM
-# --------------------------------------------------------------------
+# DO NOT EDIT TOO MUCH BELOW HERE, UNLESS ONE IS DOING SOMETHING CUSTOM
+# ---------------------------------------------------------------------
 
 
-# Define pathes (i.e. “/users/home/username”).
-# NOTE that on a Joyent SmartMachine “JOY_DIR”
-# may be “/home/${JOY}” or similar, whereat on a
-# Shared SmartMachine it’d be “/users/home/${JOY}”.
+# Define pathes (i.e. "/users/home/username").
+# NOTE that on a Joyent SmartMachine JOY_DIR
+# may be "/home/${JOY}" or similar, whereat on a
+# Shared SmartMachine it would be "/users/home/${JOY}".
 
 DATESTAMP=`date "+%Y-%m-%d"`
 JOY_DIR="/users/home/${JOY}"
@@ -91,7 +91,7 @@ done
 
 # Run the backup.
 # NOTE that on a Joyent SmartMachine rsync
-# resides in “/opt/local/bin/rsync”, whereat on a
-# Shared SmartMachine it’s “/usr/local/bin/rsync”.
+# resides in "/opt/local/bin/rsync", whereat on a
+# Shared SmartMachine it is "/usr/local/bin/rsync".
 
 /usr/local/bin/rsync -rltpqz --delete --delete-after --exclude-from "${JOY_BACKUP_DIR}/exclude.txt" ${JOY_DIR}/ ${SS_ALIAS}:${SS_DIR}
