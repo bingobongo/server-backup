@@ -31,7 +31,7 @@ Setup
 
 		% ~/backup/backup.sh
 
-7. Finally, add it as a cronjob.
-	- On a Joyent **SmartMachine** log in to Webmin and navigate to <b>Webmin</b> – <b>System</b> – <b>Scheduled Cron Jobs</b>. There hit <b>Create a new scheduled cron job</b>. In the input box labelled <b>Execute cron job as</b> put `root` and in the input box labelled <b>Command</b> put the path to your backup script (e.g. `/home/USERNAME/backup/backup.sh`). Finally, set when you want it to execute and hit <b>Create</b> to finish.
+7. Finally add it as a cronjob.
+	- On a Joyent **SmartMachine** log in to Webmin and navigate to <b>Webmin</b> – <b>System</b> – <b>Scheduled Cron Jobs</b>. There hit <b>Create a new scheduled cron job</b>. In the input box labelled <b>Execute cron job as</b> put `root` and in the input box labelled <b>Command</b> put the path to your backup script (e.g. `/home/USERNAME/backup/backup.sh`). Finally set when you want it to execute and hit <b>Create</b> to finish.
 
-	- On a Joyent **Shared SmartMachine** log in to Virtualmin and navigate to <b>Webmin Modules</b> – <b>Scheduled Cron Jobs</b>. There hit <b>Create a new scheduled cron job</b>. In the input box labelled <b>Command</b> put the path to your backup script (e.g. `/users/home/USERNAME/backup/backup.sh`). Finally, set when you want it to execute and hit <b>Create</b> to finish.
+	- On a Joyent **Shared SmartMachine** log in to Virtualmin and navigate to <b>Webmin Modules</b> – <b>Scheduled Cron Jobs</b>. There hit <b>Create a new scheduled cron job</b>. In the input box labelled <b>Command</b> put the path to your backup script (e.g. `/users/home/USERNAME/backup/backup.sh`). Finally set when you want it to execute and hit <b>Create</b> to finish.
