@@ -21,9 +21,10 @@ Setup
 
 2. Create the directories that will be used for the backup rotation purpose on Strongspace; they must all be in that same Space.
 
-3. Set up [password-less logins to Strongspace](https://www.strongspace.com/help/password-less-login-with-ssh-keys); set the permissions of the keys to `600`.
+3. Set up [password-less logins to Strongspace](https://www.strongspace.com/help/password-less-login-with-ssh-keys); set the permissions of the keys to `600`.  
+To use multiple keys, name the file in which to save the key e.g. `ss_rsa` and specify it as identity file in `config`.
 
-4. Create an SSH alias as described [here](https://www.strongspace.com/help/ssh-alias) – like `config` file.
+4. Create an SSH alias as done in the `config` file and described [here](https://www.strongspace.com/help/ssh-alias).
 
 5. Configure `backup.sh` and `exclude.txt`. Instructions on configuration are found inside `backup.sh`. Upload the two files to the before created directory on your server. Set the permissons of `backup.sh` to `700` and `exclude.txt` to `600`.
 
