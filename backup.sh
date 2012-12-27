@@ -6,7 +6,7 @@
 # @author     Markus Mayer
 # @license    MIT License
 # @copyright  2012- Markus Mayer
-# @link       http://doogvaard.net/server-backup-rotation
+# @link       http://doogvaard.net/server-backup
 
 
 # CONFIGURATION SECTION
