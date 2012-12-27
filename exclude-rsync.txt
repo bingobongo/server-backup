@@ -1,0 +1,5 @@
+- backup/data/
+- backup/mysql/
+- backup/tar/
+- backup/*.log
+- backup/_recently_synced_with_*

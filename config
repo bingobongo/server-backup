@@ -1,4 +1,4 @@
 Host ss
-	HostName username.strongspace.com
-	User username
-	IdentityFile ~/.ssh/ss_rsa
+  HostName username.strongspace.com
+  User username
+  IdentityFile ~/.ssh/strongspace_rsa
