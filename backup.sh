@@ -86,8 +86,8 @@ TIMESTAMP=$(date "+%Y%m%d_%H%M%S")
 
 # Sets user name and log path for safty's sake.
 
-[ -z "${USERNAME}" ] && USERNAME="$(id -un)"
-[ -d ${DESTINATION} ] && LOGFILE="${DESTINATION}/backup.log" || LOGFILE=/dev/null
+[[ -z ${USERNAME} ]] && USERNAME="$(id -un)"
+[[ -d ${DESTINATION} ]] && LOGFILE="${DESTINATION}/backup.log" || LOGFILE=/dev/null
 
 usage()
 {
@@ -98,7 +98,7 @@ usage()
 log()
 {
   echo -e "${1}"
-  if [ -n "${2}" ]; then
+  if [[ -n ${2} ]]; then
     [[ ${2} -gt 0 && ! $VERBOSE ]] && notify
     cat << EOF
   $(date "+%F %T")
@@ -114,18 +114,18 @@ notify()
   # Note that svcs is available on Illumos/SmartOS/Solaris only.
   # Instead, try e.g. service and adjust the pipe accordingly.
 
-  if [ $(svcs -v | grep -cEe "postfix") -ne 0 ] && \
-    [[ ! -z "${RECIPIENT}" || "${RECIPIENT}" != "name@domain.tld" ]]
+  if [[ $(svcs -v | grep -cEe "postfix") -ne 0 ]] && \
+    [[ ! -z ${RECIPIENT} || ${RECIPIENT} != "name@domain.tld" ]]
   then
-    [ -z "${HOSTNAME}" ] && HOSTNAME="$(hostname)"
+    [[ -z ${HOSTNAME} ]] && HOSTNAME="$(hostname)"
     OBFUSCATED="${RECIPIENT%%@*}@${RECIPIENT#*@}"
     OBFUSCATED="${OBFUSCATED%.*}####"
-    rmail ${RECIPIENT} <<EOF
+    rmail ${RECIPIENT} << EOF
 from: $(/opt/local/bin/gsed 's/\(.\)/\u\1/' <<< "${USERNAME}") <noreply@${HOSTNAME}>
 subject: $(/opt/local/bin/gsed 's/\(.\)/\u\1/' <<< "${HOSTNAME%%.*}") backup failed.
 Read the log file '${LOGFILE}' for details.
 EOF
-    [ $? -eq 0 ] && \
+    [[ $? -eq 0 ]] && \
       log "  Notified '${OBFUSCATED}'." || \
       log "  Failed to notify '${OBFUSCATED}'."
   fi
@@ -133,7 +133,7 @@ EOF
 
 backup_mysql()
 {
-  [ -z "${1}" ] && return 1
+  [[ -z ${1} ]] && return 1
   if mkdir -m 700 -p ${DESTINATION}/mysql/${1}; then
     ERROR=$({ /opt/local/bin/mysqldump --user=${MYSQL_USER} --password=${MYSQL_PASSWD} \
       -Q --database ${1} | gzip > ${DESTINATION}/mysql/${1}/${TIMESTAMP}.sql.gz; } 2>&1 )
@@ -152,7 +152,7 @@ backup_mysql()
 
 backup_pathname()
 {
-  [ -z "${1}" ] && return 1
+  [[ -z ${1} ]] && return 1
   FLAT=${1//\//_}; FLAT=${FLAT#_}
   if mkdir -m 700 -p ${DESTINATION}/tar/${FLAT} && \
      /opt/local/bin/gtar -pszcf ${DESTINATION}/tar/${FLAT}/${TIMESTAMP}.tar.gz \
@@ -172,7 +172,7 @@ backup_pathname()
 
 remove_outdated()
 {
-  [ -z "${1}" ] && return 1
+  [[ -z ${1} ]] && return 1
   OUTDATED=$(find ${1} -mtime +${MTIME})
   if [ -n "${OUTDATED}" ]; then
     rm -f ${OUTDATED} && log "  Removed outdated dumps." || \
@@ -182,7 +182,7 @@ remove_outdated()
 
 remove_unlisted()
 {
-  [[ -z "${1}" ||  ! -d "${DESTINATION}/${1}" || -z "${2}" ]] && return 1
+  [[ -z ${1} || ! -d ${DESTINATION}/${1} || -z ${2} ]] && return 1
   LISTPATH="${DESTINATION}/${1}"; LIST="${2}"
 
   # Flattens pathnames for comparison.
@@ -199,7 +199,7 @@ remove_unlisted()
     NAME="${PATHNAME##*/}"
     [[ ${NAME} == "*" ]] && continue
     is_listed ${NAME} "${LIST}"
-    if [ $? -gt 1 ]; then
+    if [[ $? -gt 1 ]]; then
       rm -rf ${PATHNAME} && log "* Removed unlisted '${1}/${NAME}'." || \
         log "* WARNING - Failed to remove unlisted '${1}/${NAME}'."
     fi
@@ -208,7 +208,7 @@ remove_unlisted()
 
 is_listed()
 {
-  [[ -z "${1}" || -z "${2}" ]] && return 1
+  [[ -z ${1} || -z ${2} ]] && return 1
   for LISTED in ${2}; do
     [[ ${LISTED} == ${1} ]] && return
   done
@@ -217,9 +217,9 @@ is_listed()
 
 sync_pathname()
 {
-  [[ -z "${1}" || ! -d ${1} ]] && return 1
+  [[ -z ${1} || ! -d ${1} ]] && return 1
   FLAT=${1//\//_}; FLAT=${FLAT#_}
-  if [ ! -d ${DESTINATION}/data/${FLAT} ]; then
+  if [[ ! -d ${DESTINATION}/data/${FLAT} ]]; then
     log "* ERROR - No placeholder found for '${1}', synchronization abandoned." && return 2
   elif /opt/local/bin/rsync ${RSYNC_OPTION} --delete --delete-after \
          ${EXCLUDE_FROM_RSYNC} ${1}/ ${SS_ALIAS}:${SS_PATH}/data/${FLAT}
@@ -238,7 +238,7 @@ run_backup()
 
   # Sets rsync options corresponding to user name.
 
-  if [ "${USERNAME}" != "root" ]; then
+  if [[ ${USERNAME} != "root" ]]; then
     cat << EOF
 * WARNING - Not running as root.
   Running as ${USERNAME} seems right, though it might be wrong.
@@ -251,9 +251,9 @@ EOF
 
   # Verifies destination path.
 
-  [ ! -e ${DESTINATION} ] && \
+  [[ ! -e ${DESTINATION} ]] && \
     log "* ERROR - DESTINATION '${DESTINATION}' doesn't exist." 2
-  [ ! -d ${DESTINATION} ] && \
+  [[ ! -d ${DESTINATION} ]] && \
     log "* ERROR - DESTINATION '${DESTINATION}' is not a directory." 2
 
   # Prevents from configuration bubkis.
@@ -263,24 +263,24 @@ EOF
     # Seeks for recently used subdirectory name.
 
     for NAME in ${SS_DIRS}; do
-      [ -z "${FUTURE}" ] && [ ! -f ${DESTINATION}/${SS_PREFIX}${NAME} ] && FUTURE=${NAME}
-      if [ -z "${RECENT}" ]; then
-        [ -f ${DESTINATION}/${SS_PREFIX}${NAME} ] && RECENT=${NAME}
+      [[ -z ${FUTURE} && ! -f ${DESTINATION}/${SS_PREFIX}${NAME} ]] && FUTURE=${NAME}
+      if [[ -z ${RECENT} ]]; then
+        [[ -f ${DESTINATION}/${SS_PREFIX}${NAME} ]] && RECENT=${NAME}
         continue
       else
         FUTURE=${NAME}; break
       fi
     done
 
-    [ -z "${SS_ALIAS}" ] && \
+    [[ -z ${SS_ALIAS} ]] && \
       log "* ERROR - Undefined SS_ALIAS." 2
-    [[ -z "${SS_BASE}" || "${SS_BASE}" == "/strongspace/username/space-name" ]] && \
+    [[ -z ${SS_BASE} || ${SS_BASE} == "/strongspace/username/space-name" ]] && \
       log "* ERROR - SS_BASE '${SS_BASE}' is not advisable." 2
-    [[ -z "${SS_DIRS}" || "${SS_DIRS}" == "subdir-name-1 subdir-name-2" ]] && \
+    [[ -z ${SS_DIRS} || "${SS_DIRS}" == "subdir-name-1 subdir-name-2" ]] && \
       log "* ERROR - SS_DIRS '${SS_DIRS}' is not advisable." 2
-    [ -z "${FUTURE}" ] && \
+    [[ -z ${FUTURE} ]] && \
       log "* ERROR - Undefined FUTURE, failed to set SS_PATH." 2
-    [ -f ${DESTINATION}/exclude-rsync.txt ] && \
+    [[ -f ${DESTINATION}/exclude-rsync.txt ]] && \
       EXCLUDE_FROM_RSYNC="--exclude-from ${DESTINATION}/exclude-rsync.txt"
     SS_PATH="${SS_BASE}/${FUTURE}" # Sets full Strongspace pathname.
   fi
@@ -289,20 +289,20 @@ EOF
 
   TEMP=""
   for PATHNAME in ${PATHNAMES}; do
-    [ ! -e ${PATHNAME} ] && log "* WARNING - '${PATHNAME}' doesn't exist." && continue
+    [[ ! -e ${PATHNAME} ]] && log "* WARNING - '${PATHNAME}' doesn't exist." && continue
     TEMP="${TEMP} ${PATHNAME}"
   done
   PATHNAMES=${TEMP# }; TEMP=""
 
   # Makes backup of directory, file.
 
-  if [ -z "${PATHNAMES}" ]; then
+  if [[ -z ${PATHNAMES} ]]; then
     log "* WARNING - No PATHNAMES found, its backup abandoned."
   else
 
     # Verifies existence of exclude-tar.txt.
 
-    [ ! -f ${DESTINATION}/exclude-tar.txt ] && \
+    [[ ! -f ${DESTINATION}/exclude-tar.txt ]] && \
       log "* ERROR - File '${DESTINATION}/exclude-tar.txt' doesn't exist." 2
 
     for PATHNAME in ${PATHNAMES}; do
@@ -346,7 +346,7 @@ EOF
 
     # Remembers the last rotated backup destination.
 
-    if [ -n "${RECENT}" ] && [ -n "${FUTURE}" ]; then
+    if [[ -n ${RECENT} && -n ${FUTURE} ]]; then
       if mv ${DESTINATION}/${SS_PREFIX}${RECENT} ${DESTINATION}/${SS_PREFIX}${FUTURE}; then
         log "* Updated destination mark '${SS_PREFIX}${RECENT}' to '${FUTURE}'."
       else
@@ -362,7 +362,7 @@ EOF
 
     # Pathname synchronization comes last.
 
-    if [ -n "${PATHNAMES}" ]; then
+    if [[ -n ${PATHNAMES} ]]; then
       for PATHNAME in ${PATHNAMES}; do
         sync_pathname ${PATHNAME}
       done
