@@ -114,8 +114,8 @@ notify()
   # Note that svcs is available on Illumos/SmartOS/Solaris only.
   # Instead, try e.g. service and adjust the pipe accordingly.
 
-  if [[ $(svcs -v | grep -cEe "postfix") -ne 0 ]] && \
-    [[ ! -z ${RECIPIENT} || ${RECIPIENT} != "name@domain.tld" ]]
+  if [[ $(svcs -v | grep -cEe "postfix") -ne 0 && \
+    -n ${RECIPIENT} && ${RECIPIENT} != "name@domain.tld" ]]
   then
     [[ -z ${HOSTNAME} ]] && HOSTNAME="$(hostname)"
     OBFUSCATED="${RECIPIENT%%@*}@${RECIPIENT#*@}"
