@@ -51,9 +51,9 @@ To use multiple keys, name the file in which to save the key (e.g. `strongspace_
     Option `L` (`--resetlog`) empties the log file before writing to it and `U` (`--deleteunlisted`) deletes backups of unlisted databases, directories and files; i.e.
 
         % ~/backup/backup.sh -lvLU
-    or more readable
+    or in a more readable form
 
-        % ~/backup/backup.sh --localonly --verbose --resetlog --unlisted
+        % ~/backup/backup.sh --localonly --verbose --resetlog --deleteunlisted
 
 7. Finally add it as a cronjob.
     - On a Joyent **SmartMachine Standard** use `crontab` with option `e` while logged in as root to schedule a backup.
