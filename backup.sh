@@ -12,6 +12,11 @@
 # CONFIGURATION SECTION
 # ---------------------
 
+# The email address to which error messages are sent.
+# Leave it blank to turn it off.
+
+RECIPIENT="name@domain.tld"
+
 # The pathname of the directory where the exclude-text-files
 # are stored and where to store backups, log, etc.
 # For example "/root/backup" or "/home/username/backup"
@@ -64,7 +69,7 @@ SS_DIRS="subdir-name-1 subdir-name-2"
 # dumps, tarballs. Can be left as is.
 
 SS_PREFIX="_recently_synced_with_"
-TIMESTAMP=`date "+%Y%m%d_%H%M%S"`
+TIMESTAMP=$(date "+%Y%m%d_%H%M%S")
 
 # -----------------
 # CONFIGURATION END
@@ -77,16 +82,24 @@ TIMESTAMP=`date "+%Y%m%d_%H%M%S"`
 # Note that the pathes to some utilities might
 # differ depending on the respective server.
 # Make sure that the correct pathes are noted.
-# This is particularly true for rsync, tar, mysqldump.
+# This is particularly true for rsync, tar, mysqldump, sed.
 
-# Sets log path for safty's sake.
+# Sets user name and log path for safty's sake.
 
+[ -z "${USERNAME}" ] && USERNAME="$(id -un)"
 [ -d ${DESTINATION} ] && LOGFILE="${DESTINATION}/backup.log" || LOGFILE=/dev/null
+
+usage()
+{
+  echo "  Usage: ${0#*/} [-h help] [-l localonly] [-v verbose] [-L resetlog] [-U deleteunlisted]"
+  exit
+}
 
 log()
 {
-  echo "${1}"
+  echo -e "${1}"
   if [ -n "${2}" ]; then
+    [[ ${2} -gt 0 && ! $VERBOSE ]] && notify
     cat << EOF
   $(date "+%F %T")
 * -------------------
@@ -95,18 +108,46 @@ EOF
   fi
 }
 
+notify()
+{
+  # Verifies postfix is running and recipient email specified.
+  # Note that svcs is available on Illumos/SmartOS/Solaris only.
+  # Instead, try e.g. service and adjust the pipe accordingly.
+
+  if [ $(svcs -v | grep -cEe "postfix") -ne 0 ] && \
+    [[ ! -z "${RECIPIENT}" || "${RECIPIENT}" != "name@domain.tld" ]]
+  then
+    [ -z "${HOSTNAME}" ] && HOSTNAME="$(hostname)"
+    OBFUSCATED="${RECIPIENT%%@*}@${RECIPIENT#*@}"
+    OBFUSCATED="${OBFUSCATED%.*}####"
+    rmail ${RECIPIENT} <<EOF
+from: $(/opt/local/bin/gsed 's/\(.\)/\u\1/' <<< "${USERNAME}") <noreply@${HOSTNAME}>
+subject: $(/opt/local/bin/gsed 's/\(.\)/\u\1/' <<< "${HOSTNAME%%.*}") backup failed.
+Read the log file '${LOGFILE}' for details.
+EOF
+    [ $? -eq 0 ] && \
+      log "  Notified '${OBFUSCATED}'." || \
+      log "  Failed to notify '${OBFUSCATED}'."
+  fi
+}
+
 backup_mysql()
 {
   [ -z "${1}" ] && return 1
-  if mkdir -m 700 -p ${DESTINATION}/mysql/${1} && \
-     /opt/local/bin/mysqldump --user=${MYSQL_USER} --password=${MYSQL_PASSWD} \
-       -Q --database ${1} > ${DESTINATION}/mysql/${1}/${TIMESTAMP}.sql
-  then
-    log "* Dumped MySQL database '${1}' to 'mysql/${1}/${TIMESTAMP}.sql'."
-  else
-    log "* ERROR - Failed to backup MySQL database '${1}'." && return 2
+  if mkdir -m 700 -p ${DESTINATION}/mysql/${1}; then
+    ERROR=$({ /opt/local/bin/mysqldump --user=${MYSQL_USER} --password=${MYSQL_PASSWD} \
+      -Q --database ${1} | gzip > ${DESTINATION}/mysql/${1}/${TIMESTAMP}.sql.gz; } 2>&1 )
+
+    if [ -z "${ERROR}" ]; then
+      log "* Dumped MySQL database '${1}' to 'mysql/${1}/${TIMESTAMP}.sql.gz'."
+      remove_outdated ${DESTINATION}/mysql/${1}/*.sql.gz
+      return
+    else
+      rm -f ${DESTINATION}/mysql/${1}/${TIMESTAMP}.sql.gz
+      ERROR="\n  ${ERROR}"
+    fi
   fi
-  remove_outdated ${DESTINATION}/mysql/${1}/*.sql
+  log "* ERROR - Failed to backup MySQL database '${1}'.${ERROR}" && return 2
 }
 
 backup_pathname()
@@ -132,7 +173,7 @@ backup_pathname()
 remove_outdated()
 {
   [ -z "${1}" ] && return 1
-  OUTDATED=`find ${1} -mtime +${MTIME}`
+  OUTDATED=$(find ${1} -mtime +${MTIME})
   if [ -n "${OUTDATED}" ]; then
     rm -f ${OUTDATED} && log "  Removed outdated dumps." || \
       log "  WARNING - Failed to remove outdated dumps."
@@ -195,7 +236,8 @@ run_backup()
 
   [[ $LOGRESET && -f "${LOGFILE}" ]] && $(> "${LOGFILE}") && log "* Emptied log file '${LOGFILE}'."
 
-  USERNAME="$(id -un)"
+  # Sets rsync options corresponding to user name.
+
   if [ "${USERNAME}" != "root" ]; then
     cat << EOF
 * WARNING - Not running as root.
@@ -330,25 +372,51 @@ EOF
   log "* Finished, m'Lord." 0
 }
 
-# Checks if verbose mode and/or local-only (without rsync) is turned on,
-# and if the log file should be emptied and an unlisted backup be removed.
+# Checks if verbose mode (writes messages to bash instead of log file,
+# also turns off email notification), local-only (without rsync) and
+# if the log file shall be emptied and unlisted backup be removed.
 
-while getopts ":vyLD" OPTION; do
+while getopts ":hlvLU-" OPTION; do
   case $OPTION in
-    v)
-      VERBOSE="verbose";
+    -)
+      case "${OPTARG}" in
+        help)
+          usage
+          ;;
+        localonly)
+          LOCALONLY="local-only"
+          ;;
+        verbose)
+          VERBOSE="verbose"
+          ;;
+        resetlog)
+          LOGRESET="reset-log"
+          ;;
+        deleteunlisted)
+          DELETE_UNLISTED="delete-unlisted"
+          ;;
+        \?)
+          fin "* ERROR - Invalid option '--${OPTARG}'." 2
+          ;;
+      esac
       ;;
-    y)
-      LOCALONLY="local-only";
+    h)
+      usage
+      ;;
+    l)
+      LOCALONLY="local-only"
+      ;;
+    v)
+      VERBOSE="verbose"
       ;;
     L)
-      LOGRESET="reset-log";
+      LOGRESET="reset-log"
       ;;
-    D)
-      DELETE_UNLISTED="delete-unlisted";
+    U)
+      DELETE_UNLISTED="delete-unlisted"
       ;;
-    *)
-      exit 2;
+    \?)
+      log "* ERROR - Invalid option '-${OPTARG}'." 2
       ;;
   esac
 done

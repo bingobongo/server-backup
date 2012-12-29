@@ -33,8 +33,8 @@ To use multiple keys, name the file in which to save the key (e.g. `strongspace_
 
         % mkdir -m 700 ~/backup
 
-4. Configure `backup.sh`, `exclude-tar.txt` and `exclude-rsync.txt`, whereby the latter may be omitted if no synchronization with Strongspace is intended. Instructions on configuration are found inside `backup.sh`. Upload the files to the before created directory `~/backup` on your server. Set the permissons of `backup.sh` to `700` and the other two to `600`.  
-    To prevent possible errors on a TextDrive **Shared** or when not running as root (e.g. group/owner bubkis), add the line
+4. Configure `backup.sh`, `exclude-tar.txt` and `exclude-rsync.txt`. Instructions on configuration are found inside `backup.sh`. Upload the files to the before created directory `~/backup` on your server. Set the permissons of `backup.sh` to `700` and the other two to `600`.  
+    To prevent possible errors when not running as root (e.g. group/owner bubkis on a TextDrive Shared), add the line
 
         `*/homes/db/Maildir`
     to `exclude-tar.txt` and
@@ -45,12 +45,15 @@ To use multiple keys, name the file in which to save the key (e.g. `strongspace_
 
 5. Create the directories that will be used for the backup rotation purpose on Strongspace; they must all be in that same Strongspace Space.
 
-6. Test the script and check that it runs okay.  
-    Use option `v` to display the messages instead of writing them to the log file `~/backup/backup.log`.  
-    With option `y` the backup is stored only locally without any synchronization with Strongspace.  
-    Option `L` resets the log file before writing to it and `D` deletes backups of unlisted databases, directories and files; i.e.
+6. Test the script and check that it runs okay.   
+    Use option `v` (`--verbose`) to display the messages instead of writing them to the log file `~/backup/backup.log`. Besides, verbose mode also turns off email notification.  
+    With option `l` (`--localonly`) the backup is stored only locally without any synchronization with Strongspace.  
+    Option `L` (`--resetlog`) empties the log file before writing to it and `U` (`--deleteunlisted`) deletes backups of unlisted databases, directories and files; i.e.
 
-        % ~/backup/backup.sh -vyLD
+        % ~/backup/backup.sh -lvLU
+    or more readable
+
+        % ~/backup/backup.sh --localonly --verbose --resetlog --unlisted
 
 7. Finally add it as a cronjob.
     - On a Joyent **SmartMachine Standard** use `crontab` with option `e` while logged in as root to schedule a backup.
