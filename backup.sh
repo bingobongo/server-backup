@@ -118,16 +118,14 @@ notify()
     -n ${RECIPIENT} && ${RECIPIENT} != "name@domain.tld" ]]
   then
     [[ -z ${HOSTNAME} ]] && HOSTNAME="$(hostname)"
-    OBFUSCATED="${RECIPIENT%%@*}@${RECIPIENT#*@}"
-    OBFUSCATED="${OBFUSCATED%.*}####"
     rmail ${RECIPIENT} << EOF
 from: $(/opt/local/bin/gsed 's/\(.\)/\u\1/' <<< "${USERNAME}") <noreply@${HOSTNAME}>
 subject: $(/opt/local/bin/gsed 's/\(.\)/\u\1/' <<< "${HOSTNAME%%.*}") backup failed.
 Read the log file '${LOGFILE}' for details.
 EOF
     [[ $? -eq 0 ]] && \
-      log "  Notified '${OBFUSCATED}'." || \
-      log "  Failed to notify '${OBFUSCATED}'."
+      log "  Notified '${RECIPIENT%.*}####'." || \
+      log "  Failed to notify '${RECIPIENT%.*}####'."
   fi
 }
 
