@@ -82,7 +82,7 @@ TIMESTAMP=$(date "+%Y%m%d_%H%M%S")
 # Note that the pathes to some utilities might
 # differ depending on the respective server.
 # Make sure that the correct pathes are noted.
-# This is particularly true for rsync, tar, mysqldump, sed.
+# This is particularly true for rsync, tar, mysqldump.
 
 # Sets user name and log path for safty's sake.
 
@@ -118,9 +118,10 @@ notify()
     -n ${RECIPIENT} && ${RECIPIENT} != "name@domain.tld" ]]
   then
     [[ -z ${HOSTNAME} ]] && HOSTNAME="$(hostname)"
+    SERVERNAME=${HOSTNAME%%.*}
     rmail ${RECIPIENT} << EOF
-from: $(/opt/local/bin/gsed 's/\(.\)/\u\1/' <<< "${USERNAME}") <noreply@${HOSTNAME}>
-subject: $(/opt/local/bin/gsed 's/\(.\)/\u\1/' <<< "${HOSTNAME%%.*}") backup failed.
+from: ${USERNAME^} <noreply@${HOSTNAME}>
+subject: ${SERVERNAME^} backup failed.
 Read the log file '${LOGFILE}' for details.
 EOF
     [[ $? -eq 0 ]] && \
