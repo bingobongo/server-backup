@@ -118,7 +118,7 @@ notify()
     -n ${RECIPIENT} && ${RECIPIENT} != "name@domain.tld" ]]
   then
     [[ -z ${HOSTNAME} ]] && HOSTNAME="$(hostname)"
-    SERVERNAME=${HOSTNAME%%.*}
+    local SERVERNAME=${HOSTNAME%%.*}
     rmail ${RECIPIENT} << EOF
 from: ${USERNAME^} <noreply@${HOSTNAME}>
 subject: ${SERVERNAME^} backup failed.
@@ -134,10 +134,10 @@ backup_mysql()
 {
   [[ -z ${1} ]] && return 1
   if mkdir -m 700 -p ${DESTINATION}/mysql/${1}; then
-    ERROR=$({ /opt/local/bin/mysqldump --user=${MYSQL_USER} --password=${MYSQL_PASSWD} \
+    local ERROR=$({ /opt/local/bin/mysqldump --user=${MYSQL_USER} --password=${MYSQL_PASSWD} \
       -Q --database ${1} | gzip > ${DESTINATION}/mysql/${1}/${TIMESTAMP}.sql.gz; } 2>&1 )
 
-    if [ -z "${ERROR}" ]; then
+    if [[ -z ${ERROR} ]]; then
       log "* Dumped MySQL database '${1}' to 'mysql/${1}/${TIMESTAMP}.sql.gz'."
       remove_outdated ${DESTINATION}/mysql/${1}/*.sql.gz
       return
@@ -152,7 +152,7 @@ backup_mysql()
 backup_pathname()
 {
   [[ -z ${1} ]] && return 1
-  FLAT=${1//\//_}; FLAT=${FLAT#_}
+  local FLAT=${1//\//_}; FLAT=${FLAT#_}
   if mkdir -m 700 -p ${DESTINATION}/tar/${FLAT} && \
      /opt/local/bin/gtar -pszcf ${DESTINATION}/tar/${FLAT}/${TIMESTAMP}.tar.gz \
        --exclude-from ${DESTINATION}/exclude-tar.txt --warning none -C / ${1#/}
@@ -172,8 +172,8 @@ backup_pathname()
 remove_outdated()
 {
   [[ -z ${1} ]] && return 1
-  OUTDATED=$(find ${1} -mtime +${MTIME})
-  if [ -n "${OUTDATED}" ]; then
+  local OUTDATED=$(find ${1} -mtime +${MTIME})
+  if [[ -n ${OUTDATED} ]]; then
     rm -f ${OUTDATED} && log "  Removed outdated dumps." || \
       log "  WARNING - Failed to remove outdated dumps."
   fi
@@ -182,16 +182,16 @@ remove_outdated()
 remove_unlisted()
 {
   [[ -z ${1} || ! -d ${DESTINATION}/${1} || -z ${2} ]] && return 1
-  LISTPATH="${DESTINATION}/${1}"; LIST="${2}"
+  local LISTPATH="${DESTINATION}/${1}"; local LIST="${2}"
 
   # Flattens pathnames for comparison.
 
-  TEMP=""
+  local FLAT=""; local NAME=""
   for PATHNAME in ${LIST}; do
     FLAT=${PATHNAME//\//_}; FLAT=${FLAT#_}
-    TEMP="${TEMP} ${FLAT}"
+    NAME="${NAME} ${FLAT}"
   done
-  LIST=${TEMP# }; TEMP=""
+  LIST=${NAME# }
 
   for PATHNAME in ${LISTPATH}/*/; do
     PATHNAME=${PATHNAME%*/}
@@ -217,7 +217,7 @@ is_listed()
 sync_pathname()
 {
   [[ -z ${1} || ! -d ${1} ]] && return 1
-  FLAT=${1//\//_}; FLAT=${FLAT#_}
+  local FLAT=${1//\//_}; FLAT=${FLAT#_}
   if [[ ! -d ${DESTINATION}/data/${FLAT} ]]; then
     log "* ERROR - No placeholder found for '${1}', synchronization abandoned." && return 2
   elif /opt/local/bin/rsync ${RSYNC_OPTION} --delete --delete-after \
@@ -239,9 +239,8 @@ run_backup()
 
   if [[ ${USERNAME} != "root" ]]; then
     cat << EOF
-* WARNING - Not running as root.
-  Running as ${USERNAME} seems right, though it might be wrong.
-  Besides, rsync executes with options '-rlptzq' instead of '-azq'.
+* WARNING - Not running as root, but as ${USERNAME}.
+  rsync executes with options '-rlptzq' instead of '-azq'.
 EOF
     RSYNC_OPTION="-rlptzq"
   else
@@ -286,7 +285,7 @@ EOF
 
   # Verifies existence of pathnames.
 
-  TEMP=""
+  local TEMP=""
   for PATHNAME in ${PATHNAMES}; do
     [[ ! -e ${PATHNAME} ]] && log "* WARNING - '${PATHNAME}' doesn't exist." && continue
     TEMP="${TEMP} ${PATHNAME}"
