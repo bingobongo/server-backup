@@ -93,7 +93,7 @@ usage()
 {
   local bold=$(tput bold)
   local normal=$(tput sgr0)
-  local NAMED=${bold}${0#*/}${normal}
+  local NAMED=${bold}${0##*/}${normal}
   echo "\
   Usage: ${NAMED} [-h]
          ${NAMED} [-vlLU]"
