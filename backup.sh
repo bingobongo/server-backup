@@ -91,7 +91,12 @@ TIMESTAMP=$(date "+%Y%m%d_%H%M%S")
 
 usage()
 {
-  echo "  Usage: ${0#*/} [-h help] [-l localonly] [-v verbose] [-L resetlog] [-U deleteunlisted]"
+  local bold=$(tput bold)
+  local normal=$(tput sgr0)
+  local NAMED=${bold}${0#*/}${normal}
+  echo "\
+  Usage: ${NAMED} [-h]
+         ${NAMED} [-vlLU]"
   exit
 }
 
@@ -374,18 +379,18 @@ EOF
 # also turns off email notification), local-only (without rsync) and
 # if the log file shall be emptied and unlisted backup be removed.
 
-while getopts ":hlvLU-" OPTION; do
+while getopts ":vhlLU-:" OPTION; do
   case $OPTION in
     -)
       case "${OPTARG}" in
+        verbose)
+          VERBOSE="verbose"
+          ;;
         help)
           usage
           ;;
         localonly)
           LOCALONLY="local-only"
-          ;;
-        verbose)
-          VERBOSE="verbose"
           ;;
         resetlog)
           LOGRESET="reset-log"
@@ -393,19 +398,19 @@ while getopts ":hlvLU-" OPTION; do
         deleteunlisted)
           DELETE_UNLISTED="delete-unlisted"
           ;;
-        \?)
-          fin "* ERROR - Invalid option '--${OPTARG}'." 2
+        *)
+          log "* ERROR - Invalid option '--${OPTARG}'." 2
           ;;
       esac
+      ;;
+    v)
+      VERBOSE="verbose"
       ;;
     h)
       usage
       ;;
     l)
       LOCALONLY="local-only"
-      ;;
-    v)
-      VERBOSE="verbose"
       ;;
     L)
       LOGRESET="reset-log"

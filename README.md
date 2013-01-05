@@ -50,10 +50,10 @@ To use multiple keys, name the file in which to save the key (e.g. `strongspace_
     With option `l` (`--localonly`) the backup is stored only locally without any synchronization with Strongspace.  
     Option `L` (`--resetlog`) empties the log file before writing to it and `U` (`--deleteunlisted`) deletes backups of unlisted databases, directories and files; i.e.
 
-        % ~/backup/backup.sh -lvLU
+        % ~/backup/backup.sh -vlLU
     or in a more readable form
 
-        % ~/backup/backup.sh --localonly --verbose --resetlog --deleteunlisted
+        % ~/backup/backup.sh --verbose --localonly --resetlog --deleteunlisted
 
 7. Finally add it as a cronjob.
     - On a Joyent **SmartMachine Standard** use `crontab` with option `e` while logged in as root to schedule a backup.
