@@ -86,7 +86,7 @@ TIMESTAMP=$(date "+%Y%m%d_%H%M%S")
 
 # Sets user name and log path for safty's sake.
 
-[[ -z ${USERNAME} ]] && USERNAME="$(id -un)"
+[[ -n ${USERNAME} ]] || USERNAME="$(id -un)"
 [[ -d ${DESTINATION} ]] && LOGFILE="${DESTINATION}/backup.log" || LOGFILE=/dev/null
 
 usage()
@@ -111,6 +111,7 @@ log()
 EOF
     exit "${2}"
   fi
+  return 0
 }
 
 notify()
@@ -122,7 +123,7 @@ notify()
   if [[ $(svcs -v | grep -cEe "postfix") -ne 0 && \
     -n ${RECIPIENT} && ${RECIPIENT} != "name@domain.tld" ]]
   then
-    [[ -z ${HOSTNAME} ]] && HOSTNAME="$(hostname)"
+    [[ -n ${HOSTNAME} ]] || HOSTNAME="$(hostname)"
     local SERVERNAME=${HOSTNAME%%.*}
     rmail ${RECIPIENT} << EOF
 from: ${USERNAME^} <noreply@${HOSTNAME}>
@@ -137,7 +138,7 @@ EOF
 
 backup_mysql()
 {
-  [[ -z ${1} ]] && return 1
+  [[ -n ${1} ]] || return 1
   if mkdir -m 700 -p ${DESTINATION}/mysql/${1}; then
     local ERROR=$({ /opt/local/bin/mysqldump --user=${MYSQL_USER} --password=${MYSQL_PASSWD} \
       -Q --database ${1} | gzip > ${DESTINATION}/mysql/${1}/${TIMESTAMP}.sql.gz; } 2>&1 )
@@ -145,18 +146,18 @@ backup_mysql()
     if [[ -z ${ERROR} ]]; then
       log "* Dumped MySQL database '${1}' to 'mysql/${1}/${TIMESTAMP}.sql.gz'."
       remove_outdated ${DESTINATION}/mysql/${1}/*.sql.gz
-      return
+      return 0
     else
       rm -f ${DESTINATION}/mysql/${1}/${TIMESTAMP}.sql.gz
       ERROR="\n  ${ERROR}"
     fi
   fi
-  log "* ERROR - Failed to backup MySQL database '${1}'.${ERROR}" && return 2
+  log "* ERROR - Failed to backup MySQL database '${1}'.${ERROR}"; return 2
 }
 
 backup_pathname()
 {
-  [[ -z ${1} ]] && return 1
+  [[ -n ${1} ]] || return 1
   local FLAT=${1//\//_}; FLAT=${FLAT#_}
   if mkdir -m 700 -p ${DESTINATION}/tar/${FLAT} && \
      /opt/local/bin/gtar -pszcf ${DESTINATION}/tar/${FLAT}/${TIMESTAMP}.tar.gz \
@@ -164,7 +165,7 @@ backup_pathname()
   then
     log "* Dumped '${1}' to 'tar/${FLAT}/${TIMESTAMP}.tar.gz'."
   else
-    log "* ERROR - Failed to backup '${1}'." && return 2
+    log "* ERROR - Failed to backup '${1}'."; return 2
   fi
   if [[ ! $LOCALONLY && -d ${1} && ! -d ${DESTINATION}/data/${FLAT} ]]; then
     mkdir -m 700 -p ${DESTINATION}/data/${FLAT} && \
@@ -176,7 +177,7 @@ backup_pathname()
 
 remove_outdated()
 {
-  [[ -z ${1} ]] && return 1
+  [[ -n ${1} ]] || return 1
   local OUTDATED=$(find ${1} -mtime +${MTIME})
   if [[ -n ${OUTDATED} ]]; then
     rm -f ${OUTDATED} && log "  Removed outdated dumps." || \
@@ -186,12 +187,13 @@ remove_outdated()
 
 remove_unlisted()
 {
-  [[ -z ${1} || ! -d ${DESTINATION}/${1} || -z ${2} ]] && return 1
-  local LISTPATH="${DESTINATION}/${1}"; local LIST="${2}"
+  [[ -n ${1} && -d ${DESTINATION}/${1} && -n ${2} ]] || return 1
+  local LISTPATH="${DESTINATION}/${1}"
+  local LIST="${2}"
 
   # Flattens pathnames for comparison.
 
-  local FLAT=""; local NAME=""
+  local FLAT=; local NAME=
   for PATHNAME in ${LIST}; do
     FLAT=${PATHNAME//\//_}; FLAT=${FLAT#_}
     NAME="${NAME} ${FLAT}"
@@ -212,7 +214,7 @@ remove_unlisted()
 
 is_listed()
 {
-  [[ -z ${1} || -z ${2} ]] && return 1
+  [[ -n ${1} && -n ${2} ]] || return 1
   for LISTED in ${2}; do
     [[ ${LISTED} == ${1} ]] && return
   done
@@ -221,42 +223,36 @@ is_listed()
 
 sync_pathname()
 {
-  [[ -z ${1} || ! -d ${1} ]] && return 1
+  [[ -n ${1} && -d ${1} ]] || return 1
   local FLAT=${1//\//_}; FLAT=${FLAT#_}
-  if [[ ! -d ${DESTINATION}/data/${FLAT} ]]; then
-    log "* ERROR - No placeholder found for '${1}', synchronization abandoned." && return 2
-  elif /opt/local/bin/rsync ${RSYNC_OPTION} --delete --delete-after \
-         ${EXCLUDE_FROM_RSYNC} ${1}/ ${SS_ALIAS}:${SS_PATH}/data/${FLAT}
-  then
-    log "* Synced directory '${1}'."
-  else
-    log "* ERROR - Failed to synchronize directory '${1}'." && return 2
-  fi
+  [[ -d ${DESTINATION}/data/${FLAT} ]] || \
+    { log "* ERROR - No placeholder found for '${1}', synchronization abandoned."; return 2; }
+  /opt/local/bin/rsync ${RSYNC_OPTION} --delete --delete-after \
+    ${EXCLUDE_FROM_RSYNC} ${1}/ ${SS_ALIAS}:${SS_PATH}/data/${FLAT} && \
+    log "* Synced directory '${1}'." || \
+    { log "* ERROR - Failed to synchronize directory '${1}'."; return 2; }
 }
 
 run_backup()
 {
+  local TEMP=
+
   # Empties the log file.
 
   [[ $LOGRESET && -f "${LOGFILE}" ]] && $(> "${LOGFILE}") && log "* Emptied log file '${LOGFILE}'."
 
   # Sets rsync options corresponding to user name.
 
-  if [[ ${USERNAME} != "root" ]]; then
-    cat << EOF
+  RSYNC_OPTION="-azq"
+  [[ ${USERNAME} == "root" ]] || { echo "
 * WARNING - Not running as root, but as ${USERNAME}.
-  rsync executes with options '-rlptzq' instead of '-azq'.
-EOF
-    RSYNC_OPTION="-rlptzq"
-  else
-    RSYNC_OPTION="-azq"
-  fi
+  rsync executes with options '-rlptzq' instead of '-azq'."; RSYNC_OPTION="-rlptzq"; }
 
   # Verifies destination path.
 
-  [[ ! -e ${DESTINATION} ]] && \
+  [[ -e ${DESTINATION} ]] || \
     log "* ERROR - DESTINATION '${DESTINATION}' doesn't exist." 2
-  [[ ! -d ${DESTINATION} ]] && \
+  [[ -d ${DESTINATION} ]] || \
     log "* ERROR - DESTINATION '${DESTINATION}' is not a directory." 2
 
   # Prevents from configuration bubkis.
@@ -290,27 +286,26 @@ EOF
 
   # Verifies existence of pathnames.
 
-  local TEMP=""
   for PATHNAME in ${PATHNAMES}; do
-    [[ ! -e ${PATHNAME} ]] && log "* WARNING - '${PATHNAME}' doesn't exist." && continue
-    TEMP="${TEMP} ${PATHNAME}"
+    [[ -e ${PATHNAME} ]] && TEMP="${TEMP} ${PATHNAME}" || \
+      log "* WARNING - '${PATHNAME}' doesn't exist."
   done
-  PATHNAMES=${TEMP# }; TEMP=""
+  PATHNAMES=${TEMP# }; TEMP=
 
   # Makes backup of directory, file.
 
-  if [[ -z ${PATHNAMES} ]]; then
-    log "* WARNING - No PATHNAMES found, its backup abandoned."
-  else
+  if [[ -n ${PATHNAMES} ]]; then
 
     # Verifies existence of exclude-tar.txt.
 
-    [[ ! -f ${DESTINATION}/exclude-tar.txt ]] && \
+    [[ -f ${DESTINATION}/exclude-tar.txt ]] || \
       log "* ERROR - File '${DESTINATION}/exclude-tar.txt' doesn't exist." 2
 
     for PATHNAME in ${PATHNAMES}; do
       backup_pathname ${PATHNAME}
     done
+  else
+    log "* WARNING - No PATHNAMES found, its backup abandoned."
   fi
 
   # Makes backup of database.
@@ -341,26 +336,20 @@ EOF
     # options "-azq" with "-rlptzq" when not running as root), e.g.
     # rsync -azv --delete --delete-after --stats --progress /DESTINATION/backup/ ss:/strongspace/USERNAME/SPACE-NAME/SUBDIRECTORY-NAME
 
-    if /opt/local/bin/rsync ${RSYNC_OPTION} --delete --delete-after ${DESTINATION}/ ${SS_ALIAS}:${SS_PATH}; then
-      log "* Synced directory '${DESTINATION}'."
-    else
+    /opt/local/bin/rsync ${RSYNC_OPTION} --delete --delete-after ${DESTINATION}/ ${SS_ALIAS}:${SS_PATH} && \
+      log "* Synced directory '${DESTINATION}'." || \
       log "* ERROR - Failed to synchronize directory '${DESTINATION}'." 2
-    fi
 
     # Remembers the last rotated backup destination.
 
     if [[ -n ${RECENT} && -n ${FUTURE} ]]; then
-      if mv ${DESTINATION}/${SS_PREFIX}${RECENT} ${DESTINATION}/${SS_PREFIX}${FUTURE}; then
-        log "* Updated destination mark '${SS_PREFIX}${RECENT}' to '${FUTURE}'."
-      else
+      mv ${DESTINATION}/${SS_PREFIX}${RECENT} ${DESTINATION}/${SS_PREFIX}${FUTURE} && \
+        log "* Updated destination mark '${SS_PREFIX}${RECENT}' to '${FUTURE}'." || \
         log "* ERROR - Failed to update destination mark '${SS_PREFIX}${RECENT}'." 2
-      fi
     else
-      if touch ${DESTINATION}/${SS_PREFIX}${FUTURE}; then
-        log "* Created destination mark '${SS_PREFIX}${FUTURE}'."
-      else
+      touch ${DESTINATION}/${SS_PREFIX}${FUTURE} && \
+        log "* Created destination mark '${SS_PREFIX}${FUTURE}'." || \
         log "* ERROR - Failed to create destination mark '${SS_PREFIX}${FUTURE}'." 2
-      fi
     fi
 
     # Pathname synchronization comes last.
