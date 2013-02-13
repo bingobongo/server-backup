@@ -334,7 +334,7 @@ run_backup()
     # Synchronizes the backup.
     # To test rsync manually with progress and stats (note to replace
     # options "-azq" with "-rlptzq" when not running as root), e.g.
-    # rsync -azv --delete --delete-after --stats --progress /DESTINATION/backup/ ss:/strongspace/USERNAME/SPACE-NAME/SUBDIRECTORY-NAME
+    # rsync -azvv --delete --delete-after --stats --progress /DESTINATION/backup/ ss:/strongspace/USERNAME/SPACE-NAME/SUBDIRECTORY-NAME
 
     /opt/local/bin/rsync ${RSYNC_OPTION} --delete --delete-after ${DESTINATION}/ ${SS_ALIAS}:${SS_PATH} && \
       log "* Synced directory '${DESTINATION}'." || \

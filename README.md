@@ -76,4 +76,4 @@ Read the `LICENSE` for license and copyright details.
 Credits
 -------
 
-Kudos to **ExpanDrive** ([Password-less login to Strongspace with SSH Keys](https://www.strongspace.com/help/password-less-login-with-ssh-keys), [Type less with a SSH Alias](https://www.strongspace.com/help/ssh-alias), [Automated Offsite MySQL backup to Strongspace](https://www.strongspace.com/help/automated-offsite-mysql-backup)) and **Joyent** ([Automated backups to Strongspace](http://oldwiki.joyent.com/shared:automated-backups)).
+Kudos to **ExpanDrive** ([Password-less login to Strongspace with SSH Keys](https://www.strongspace.com/help/password-less-login-with-ssh-keys), [Type less with a SSH Alias](https://www.strongspace.com/help/ssh-alias), [Automated Offsite MySQL backup to Strongspace](https://www.strongspace.com/help/automated-offsite-mysql-backup)), **Joyent** and **TextDrive**.
