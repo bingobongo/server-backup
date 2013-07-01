@@ -36,10 +36,10 @@ To use multiple keys, name the file in which to save the key (e.g. `strongspace_
 4. Configure `backup.sh`, `exclude-tar.txt` and `exclude-rsync.txt`. Instructions on configuration are found inside `backup.sh`. Upload the files to the before created directory `~/backup` on your server. Set the permissons of `backup.sh` to `700` and the other two to `600`.  
     To prevent possible errors when not running as root (e.g. group/owner bubkis on a TextDrive Shared), add the line
 
-        `*/homes/*/*`
+        */homes/*/*
     to `exclude-tar.txt` and
 
-        `- homes/*/*/`
+        - homes/*/*/
     to `exclude-rsync.txt`.  
     The rest should be left as is.
 

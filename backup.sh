@@ -84,7 +84,7 @@ TIMESTAMP=$(date "+%Y%m%d_%H%M%S")
 # Make sure that the correct pathes are noted.
 # This is particularly true for rsync, tar, mysqldump.
 
-# Sets user name and log path for safty's sake.
+# Sets user name and log path for safety's sake.
 
 [[ -n ${USERNAME} ]] || USERNAME="$(id -un)"
 [[ -d ${DESTINATION} ]] && LOGFILE="${DESTINATION}/backup.log" || LOGFILE=/dev/null
@@ -120,7 +120,7 @@ notify()
   # Note that svcs is available on Illumos/SmartOS/Solaris only.
   # Instead, try e.g. service and adjust the pipe accordingly.
 
-  if [[ $(svcs -v | grep -cEe "postfix") -ne 0 && \
+  if [[ $(svcs -v | grep -c "postfix") -ne 0 && \
     -n ${RECIPIENT} && ${RECIPIENT} != "name@domain.tld" ]]
   then
     [[ -n ${HOSTNAME} ]] || HOSTNAME="$(hostname)"
